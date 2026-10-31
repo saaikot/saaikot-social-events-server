@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const { connectDB } = require("./db");
 const authRoutes = require("./routes/auth");
+const eventRoutes = require("./routes/events"); 
 
 const app = express();
 
@@ -12,7 +13,7 @@ app.use(express.json());
 
 // Routes
 app.use("/api/auth", authRoutes); 
-
+app.use("/api/events", eventRoutes);
 
 app.get("/", (req, res) => {
   res.send("Social Events Server is Running! 🚀");
