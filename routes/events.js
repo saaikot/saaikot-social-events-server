@@ -1,6 +1,7 @@
 const express = require("express");
 const { getDB } = require("../db");
 const verifyToken = require("../middleware/verifyToken");
+const { ObjectId } = require("mongodb");
 
 const router = express.Router();
 
@@ -80,6 +81,59 @@ router.get("/my-events", verifyToken, async (req, res) => {
       .toArray();
 
     res.status(200).json(events);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+router.get("/:id", async (req, res) => {
+  try {
+    const db = getDB();
+    const { id } = req.params;
+
+    // আইডি ভ্যালিড কি না চেক করা
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid Event ID" });
+    }
+
+    const event = await db.collection("events").findOne({ _id: new ObjectId(id) });
+    if (!event) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    res.status(200).json(event);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+router.post("/:id/join", verifyToken, async (req, res) => {
+  try {
+    const db = getDB();
+    const { id } = req.params;
+    const userEmail = req.user.email;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid Event ID" });
+    }
+
+    const event = await db.collection("events").findOne({ _id: new ObjectId(id) });
+    if (!event) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    // চেক করা: ইউজার আগেই জয়েন করেছে কি না
+    if (event.joinedUsers && event.joinedUsers.includes(userEmail)) {
+      return res.status(400).json({ message: "You have already joined this event!" });
+    }
+
+    // ইভেন্টের joinedUsers অ্যারেতে ইউজারের ইমেইল পুশ করা
+    await db.collection("events").updateOne(
+      { _id: new ObjectId(id) },
+      { $push: { joinedUsers: userEmail } }
+    );
+
+    res.status(200).json({ message: "Successfully joined the event!" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
