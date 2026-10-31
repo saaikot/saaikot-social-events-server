@@ -138,4 +138,82 @@ router.post("/:id/join", verifyToken, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+router.put("/:id", verifyToken, async (req, res) => {
+  try {
+    const db = getDB();
+    const { id } = req.params;
+    const { title, description, eventType, imageUrl, location, eventDate } = req.body;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid Event ID" });
+    }
+
+    // ১. ইভেন্টটা খুঁজে বের করা
+    const event = await db.collection("events").findOne({ _id: new ObjectId(id) });
+    if (!event) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    // ২. চেক করা: এই ইউজারই ইভেন্টটা বানিয়েছে কি না
+    if (event.userEmail !== req.user.email) {
+      return res.status(403).json({ message: "Forbidden: You can only update your own events" });
+    }
+
+    // ৩. ভ্যালিডেশন (যদি নতুন তারিখ দেওয়া হয়, সেটা ভবিষ্যতের হতে হবে)
+    if (eventDate) {
+      const selectedDate = new Date(eventDate);
+      if (selectedDate < new Date()) {
+        return res.status(400).json({ message: "Event date must be in the future!" });
+      }
+    }
+
+    // ৪. আপডেট করা
+    const updatedEvent = {
+      ...(title && { title }),
+      ...(description && { description }),
+      ...(eventType && { eventType }),
+      ...(imageUrl && { imageUrl }),
+      ...(location && { location }),
+      ...(eventDate && { eventDate: new Date(eventDate) }),
+    };
+
+    await db.collection("events").updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updatedEvent }
+    );
+
+    res.status(200).json({ message: "Event updated successfully", updatedEvent });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+router.delete("/:id", verifyToken, async (req, res) => {
+  try {
+    const db = getDB();
+    const { id } = req.params;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid Event ID" });
+    }
+
+    const event = await db.collection("events").findOne({ _id: new ObjectId(id) });
+    if (!event) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    // চেক করা: এই ইউজারই ইভেন্টটা বানিয়েছে কি না
+    if (event.userEmail !== req.user.email) {
+      return res.status(403).json({ message: "Forbidden: You can only delete your own events" });
+    }
+
+    await db.collection("events").deleteOne({ _id: new ObjectId(id) });
+
+    res.status(200).json({ message: "Event deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 module.exports = router;
