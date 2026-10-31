@@ -45,5 +45,38 @@ router.post("/register", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+// Login API endpoint
+router.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const db = getDB();
 
+    // ১. ইউজার ডাটাবেসে আছে কি না চেক করা
+    const user = await db.collection("users").findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: "User not found!" });
+    }
+
+    // ২. পাসওয়ার্ড ম্যাচ করা (ইউজারের দেওয়া পাসওয়ারড এবং ডাটাবেসের হ্যাশ করা পাসওয়ার্ড)
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(400).json({ message: "Invalid password!" });
+    }
+
+    // ৩. নতুন টোকেন তৈরি করা
+    const token = jwt.sign(
+      { id: user._id, email: user.email, name: user.name },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      user: { id: user._id, name: user.name, email: user.email }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 module.exports = router;
