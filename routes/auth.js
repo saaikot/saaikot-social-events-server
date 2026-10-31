@@ -79,4 +79,13 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+const verifyToken = require("../middleware/verifyToken"); 
+
+//  verifyToken 
+router.get("/me", verifyToken, (req, res) => {
+  res.json({ 
+    message: "This is a protected route.", 
+    user: req.user 
+  });
+});
 module.exports = router;
