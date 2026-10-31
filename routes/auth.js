@@ -1,31 +1,37 @@
 const express = require("express");
+const bcrypt = require("bcryptjs"); 
 const { getDB } = require("../db");
 const router = express.Router();
 
-// Basic test route
 router.get("/", (req, res) => {
   res.send("Auth route is working!");
 });
 
-// Register API endpoint
 router.post("/register", async (req, res) => {
   try {
     const { name, email, password } = req.body;
     const db = getDB();
+
     
-    // নতুন ইউজার অবজেক্ট তৈরি
+    const existingUser = await db.collection("users").findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User with this email already exists!" });
+    }
+    
+   
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
     const newUser = { 
       name, 
       email, 
-      password, 
+      password: hashedPassword, 
       createdAt: new Date() 
     };
     
-    // ডাটাবেসে সেভ করা
     const result = await db.collection("users").insertOne(newUser);
     
     res.status(201).json({ 
-      message: "User registered successfully (Unhashed password)", 
+      message: "User registered successfully with hashed password", 
       insertedId: result.insertedId 
     });
   } catch (error) {
