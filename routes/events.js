@@ -47,4 +47,41 @@ router.post("/", verifyToken, async (req, res) => {
   }
 });
 
+// 1. Get all Upcoming Events (Public Route)
+
+router.get("/", async (req, res) => {
+  try {
+    const db = getDB();
+    const today = new Date();
+
+    // শুধু আজকের বা ভবিষ্যতের ইভেন্টগুলো খোঁজা (অতীতের ইভেন্ট বাদ যাবে)
+    const events = await db.collection("events")
+      .find({ eventDate: { $gte: today } })
+      .sort({ eventDate: 1 }) 
+      .toArray();
+
+    res.status(200).json(events);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+// 2. Get Logged-in User's Own Events (Private Route)
+
+router.get("/my-events", verifyToken, async (req, res) => {
+  try {
+    const db = getDB();
+    
+    // শুধু লগইন করা ইউজারের ইমেইল দিয়ে ইভেন্ট খোঁজা
+    const events = await db.collection("events")
+      .find({ userEmail: req.user.email })
+      .sort({ createdAt: -1 }) 
+      .toArray();
+
+    res.status(200).json(events);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 module.exports = router;
