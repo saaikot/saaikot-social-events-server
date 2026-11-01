@@ -1,7 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const { ObjectId } = require("mongodb"); // 👈 ১. ObjectId ইমপোর্ট করা হলো
+const { ObjectId } = require("mongodb");
 const { getDB } = require("../db");
 const verifyToken = require("../middleware/verifyToken");
 
@@ -16,7 +16,7 @@ router.get("/", (req, res) => {
 // ==========================================
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, password, photoURL } = req.body; // 👈 photoURL যোগ করা হলো
+    const { name, email, password, photoURL } = req.body;
     const db = getDB();
 
     const existingUser = await db.collection("users").findOne({ email });
@@ -30,14 +30,14 @@ router.post("/register", async (req, res) => {
       name, 
       email, 
       password: hashedPassword,
-      photoURL: photoURL || "", // 👈 ডাটাবেসে সেভ করা হলো
+      photoURL: photoURL || "",
       createdAt: new Date() 
     };
     
     const result = await db.collection("users").insertOne(newUser);
     
     const token = jwt.sign(
-      { id: result.insertedId, email: newUser.email, name: newUser.name },
+      { id: result.insertedId.toString(), email: newUser.email, name: newUser.name }, // 👈 toString() করা হলো
       process.env.JWT_SECRET,
       { expiresIn: "1d" } 
     );
@@ -45,10 +45,10 @@ router.post("/register", async (req, res) => {
     res.status(201).json({ 
       message: "User registered successfully", 
       token, 
-      user: { id: result.insertedId, name: newUser.name, email: newUser.email, photoURL: newUser.photoURL } // 👈 ইউজার অবজেক্ট পাঠানো হলো
+      user: { id: result.insertedId, name: newUser.name, email: newUser.email, photoURL: newUser.photoURL }
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ message: error.message });
   }
 });
 
@@ -71,7 +71,7 @@ router.post("/login", async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user._id, email: user.email, name: user.name },
+      { id: user._id.toString(), email: user.email, name: user.name }, // 👈 toString() করা হলো
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
@@ -79,10 +79,10 @@ router.post("/login", async (req, res) => {
     res.status(200).json({
       message: "Login successful",
       token,
-      user: { id: user._id, name: user.name, email: user.email, photoURL: user.photoURL || "" } // 👈 photoURL যোগ করা হলো
+      user: { id: user._id, name: user.name, email: user.email, photoURL: user.photoURL || "" }
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ message: error.message });
   }
 });
 
@@ -113,7 +113,7 @@ router.put("/update-profile", verifyToken, async (req, res) => {
     if (name) updatedData.name = name;
     if (photoURL) updatedData.photoURL = photoURL;
 
-    // 👈 ObjectId ঠিকমতো ব্যবহার করা হলো
+    // ObjectId ব্যবহার করে আপডেট
     const result = await usersCollection.updateOne(
       { _id: new ObjectId(req.user.id) },
       { $set: updatedData }
@@ -135,7 +135,7 @@ router.put("/update-profile", verifyToken, async (req, res) => {
       user: { id: req.user.id, email: req.user.email, name: name || req.user.name, photoURL }
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ message: error.message }); // 👈 message পাঠানো হলো
   }
 });
 
