@@ -37,7 +37,7 @@ router.post("/register", async (req, res) => {
     const result = await db.collection("users").insertOne(newUser);
     
     const token = jwt.sign(
-      { id: result.insertedId.toString(), email: newUser.email, name: newUser.name }, // 👈 toString() করা হলো
+      { id: result.insertedId.toString(), email: newUser.email, name: newUser.name }, 
       process.env.JWT_SECRET,
       { expiresIn: "1d" } 
     );
@@ -71,7 +71,7 @@ router.post("/login", async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user._id.toString(), email: user.email, name: user.name }, // 👈 toString() করা হলো
+      { id: user._id.toString(), email: user.email, name: user.name }, 
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
@@ -80,6 +80,47 @@ router.post("/login", async (req, res) => {
       message: "Login successful",
       token,
       user: { id: user._id, name: user.name, email: user.email, photoURL: user.photoURL || "" }
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ==========================================
+// ✅ Google Login API (নতুন যোগ করা হলো)
+// ==========================================
+router.post("/google-login", async (req, res) => {
+  try {
+    const db = getDB();
+    const { name, email, photoURL } = req.body;
+
+    // ১. ইউজার আগে থেকেই আছে কি না চেক
+    let user = await db.collection("users").findOne({ email });
+
+    // ২. না থাকলে নতুন ইউজার তৈরি
+    if (!user) {
+      const newUser = {
+        name,
+        email,
+        photoURL: photoURL || "https://i.ibb.co/5v9Z1g4/default-avatar.png",
+        password: "google-auth-user", // গুগল ইউজারদের পাসওয়ার্ড লাগবে না
+        createdAt: new Date(),
+      };
+      const result = await db.collection("users").insertOne(newUser);
+      user = { ...newUser, _id: result.insertedId };
+    }
+
+    // ৩. JWT টোকেন তৈরি
+    const token = jwt.sign(
+      { id: user._id.toString(), email: user.email, name: user.name },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.status(200).json({
+      message: "Google login successful",
+      user: { id: user._id, name: user.name, email: user.email, photoURL: user.photoURL },
+      token,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -135,7 +176,7 @@ router.put("/update-profile", verifyToken, async (req, res) => {
       user: { id: req.user.id, email: req.user.email, name: name || req.user.name, photoURL }
     });
   } catch (error) {
-    res.status(500).json({ message: error.message }); // 👈 message পাঠানো হলো
+    res.status(500).json({ message: error.message }); 
   }
 });
 
