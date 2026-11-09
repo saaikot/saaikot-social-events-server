@@ -3,7 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const { connectDB } = require("./db");
 const eventRoutes = require("./routes/events"); 
-// ❌ authRoutes বাদ দেওয়া হলো, কারণ BetterAuth এখন Next.js-এ হ্যান্ডেল করবে
+
 
 const app = express();
 

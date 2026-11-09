@@ -1,19 +1,23 @@
 const express = require("express");
 const { getDB } = require("../db");
-const verifyToken = require("../middleware/verifyToken");
+const verifyToken = require("../middleware/verifyToken"); // এটি BetterAuth এর JWT ভেরিফাই করবে
 const { ObjectId } = require("mongodb");
 const router = express.Router();
 
-// Create Event API (Protected Route)
+// ==========================================
+// 1. Create Event API (Protected Route)
+// ==========================================
 router.post("/", verifyToken, async (req, res) => {
   try {
     const { title, description, eventType, imageUrl, location, eventDate } = req.body;
     const db = getDB();
 
+    // ফর্ম ভ্যালিডেশন
     if (!title || !description || !eventType || !location || !eventDate) {
       return res.status(400).json({ message: "Please provide all required fields" });
     }
 
+    // পাস্ট ডেট ভ্যালিডেশন
     const today = new Date();
     const selectedDate = new Date(eventDate);
     if (selectedDate < today) {
@@ -27,7 +31,7 @@ router.post("/", verifyToken, async (req, res) => {
       imageUrl: imageUrl || "https://via.placeholder.com/300",
       location,
       eventDate: selectedDate,
-      userEmail: req.user.email,
+      userEmail: req.user.email, // BetterAuth টোকেন থেকে আসবে
       userName: req.user.name,
       createdAt: new Date(),
     };
@@ -43,7 +47,9 @@ router.post("/", verifyToken, async (req, res) => {
   }
 });
 
-// 1. Get all Upcoming Events (Public Route) — For Events Page
+// ==========================================
+// 2. Get All Upcoming Events (Public Route)
+// ==========================================
 router.get("/", async (req, res) => {
   try {
     const db = getDB();
@@ -58,17 +64,19 @@ router.get("/", async (req, res) => {
   }
 });
 
-// ✅ নতুন রাউট: Recent Upcoming Events (Home Page-এর জন্য, .limit() ব্যবহার করে)
+// ==========================================
+// 3. Get Recent Events using .limit() (Public Route - Home Page)
+// ==========================================
 router.get("/recent", async (req, res) => {
   try {
     const db = getDB();
     const today = new Date();
-    const limit = parseInt(req.query.limit) || 6; // ডিফল্ট ৬টি
+    const limit = parseInt(req.query.limit) || 6; 
 
     const events = await db.collection("events")
       .find({ eventDate: { $gte: today } })
-      .sort({ eventDate: 1 }) // নিকটতম ইভেন্ট আগে
-      .limit(limit) // ✅ MongoDB .limit() অপারেটর
+      .sort({ eventDate: 1 }) 
+      .limit(limit) 
       .toArray();
 
     res.status(200).json(events);
@@ -77,12 +85,14 @@ router.get("/recent", async (req, res) => {
   }
 });
 
-// 2. Get Logged-in User's Own Events (Private Route)
+// ==========================================
+// 4. Get Logged-in User's Own Events (Private Route)
+// ==========================================
 router.get("/my-events", verifyToken, async (req, res) => {
   try {
     const db = getDB();
     const events = await db.collection("events")
-      .find({ userEmail: req.user.email })
+      .find({ userEmail: req.user.email }) // টোকেন থেকে ইমেইল নিয়ে ফিল্টার
       .sort({ createdAt: -1 })
       .toArray();
     res.status(200).json(events);
@@ -91,7 +101,9 @@ router.get("/my-events", verifyToken, async (req, res) => {
   }
 });
 
-// 3. Get Single Event by ID
+// ==========================================
+// 5. Get Single Event by ID (Public Route)
+// ==========================================
 router.get("/:id", async (req, res) => {
   try {
     const db = getDB();
@@ -111,7 +123,9 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// 4. Join Event API (Protected Route)
+// ==========================================
+// 6. Join Event API (Protected Route)
+// ==========================================
 router.post("/:id/join", verifyToken, async (req, res) => {
   try {
     const db = getDB();
@@ -143,7 +157,9 @@ router.post("/:id/join", verifyToken, async (req, res) => {
   }
 });
 
-// 5. Update Event API (Protected Route, Owner only)
+// ==========================================
+// 7. Update Event API (Protected Route)
+// ==========================================
 router.put("/:id", verifyToken, async (req, res) => {
   try {
     const db = getDB();
@@ -159,6 +175,7 @@ router.put("/:id", verifyToken, async (req, res) => {
       return res.status(404).json({ message: "Event not found" });
     }
 
+    // চেক করা হচ্ছে সে নিজের ইভেন্ট আপডেট করছে কি না
     if (event.userEmail !== req.user.email) {
       return res.status(403).json({ message: "You are not authorized to update this event" });
     }
@@ -183,7 +200,9 @@ router.put("/:id", verifyToken, async (req, res) => {
   }
 });
 
-// 6. Delete Event API (Protected Route, Owner only)
+// ==========================================
+// 8. Delete Event API (Protected Route)
+// ==========================================
 router.delete("/:id", verifyToken, async (req, res) => {
   try {
     const db = getDB();
@@ -198,6 +217,7 @@ router.delete("/:id", verifyToken, async (req, res) => {
       return res.status(404).json({ message: "Event not found" });
     }
 
+    // চেক করা হচ্ছে সে নিজের ইভেন্ট ডিলিট করছে কি না
     if (event.userEmail !== req.user.email) {
       return res.status(403).json({ message: "You are not authorized to delete this event" });
     }
