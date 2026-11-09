@@ -2,18 +2,20 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const { connectDB } = require("./db");
-const authRoutes = require("./routes/auth");
 const eventRoutes = require("./routes/events"); 
+// ❌ authRoutes বাদ দেওয়া হলো, কারণ BetterAuth এখন Next.js-এ হ্যান্ডেল করবে
 
 const app = express();
 
 // Middleware
-app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
+app.use(cors({ 
+  origin: process.env.CLIENT_URL, 
+  credentials: true // BetterAuth-এর কুকি/টোকেন পাঠানোর জন্য এটি জরুরি
+}));
 app.use(express.json());
 
 // Routes
-app.use("/api/auth", authRoutes); 
-app.use("/api/events", eventRoutes);
+app.use("/api/events", eventRoutes); 
 
 app.get("/", (req, res) => {
   res.send("Social Events Server is Running! 🚀");
