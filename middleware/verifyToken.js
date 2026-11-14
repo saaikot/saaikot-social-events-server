@@ -1,7 +1,8 @@
-const jwt = require("jsonwebtoken");
+const { createRemoteJWKSet, jwtVerify } = require("jose");
 
-const verifyToken = (req, res, next) => {
-  // হেডার থেকে টোকেন নেওয়া (Format: Bearer <token>)
+const JWKS = createRemoteJWKSet(new URL(`${process.env.CLIENT_URL}/api/auth/jwks`));
+
+const verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -11,13 +12,19 @@ const verifyToken = (req, res, next) => {
   const token = authHeader.split(" ")[1];
 
   try {
-    // টোকেন ভেরিফাই করা
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // ✅ jose লাইব্রেরি দিয়ে টোকেন ভেরিফাই করা হচ্ছে
+    const { payload } = await jwtVerify(token, JWKS);
+
+    // req.user এ ডাটা সেট করা
+    req.user = {
+      id: payload.sub || payload.id,
+      email: payload.email,
+      name: payload.name
+    }; 
     
-    // রিকোয়েস্টের সাথে ইউজারের ইনফো যোগ করা, যাতে পরের ফাংশনে ইউজার আইডি পাওয়া যায়
-    req.user = decoded; 
-    next(); // সব ঠিক থাকলে পরের কাজে যাওয়ার অনুমতি দেওয়া
+    next();
   } catch (error) {
+    console.error("❌ JWT Verification Error:", error.message); 
     return res.status(403).json({ message: "Forbidden: Invalid or expired token" });
   }
 };
