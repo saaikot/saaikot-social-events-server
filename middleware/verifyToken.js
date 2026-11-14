@@ -21,6 +21,8 @@ const verifyToken = async (req, res, next) => {
       email: payload.email,
       name: payload.name
     }; 
+
+    
     
     next();
   } catch (error) {
