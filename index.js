@@ -1,7 +1,6 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import { connectDB } from "./db.js"; 
 import eventRoutes from "./routes/events.js"; 
 
 const app = express();
@@ -13,14 +12,9 @@ app.use("/api/events", eventRoutes);
 
 app.get("/", (req, res) => res.send("Server is running perfectly! 🚀"));
 
-
 export default app;
 
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 5000;
-  connectDB().then(() => {
-    app.listen(PORT, () => console.log(`Server on port ${PORT}`));
-  });
-} else {
-  connectDB().catch((err) => console.error("DB Connection Error:", err));
+  app.listen(PORT, () => console.log(`Server on port ${PORT}`));
 }

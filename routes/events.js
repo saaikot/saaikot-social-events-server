@@ -1,5 +1,5 @@
 import express from "express";
-import { getDB } from "../db.js";
+import { connectDB, getDB } from "../db.js"; // connectDB 
 import verifyToken from "../middleware/verifyToken.js";
 import { ObjectId } from "mongodb";
 
@@ -8,6 +8,7 @@ const router = express.Router();
 // 1. Create Event
 router.post("/", verifyToken, async (req, res) => {
   try {
+    await connectDB();
     const db = getDB();
     const { title, description, eventType, imageUrl, location, eventDate } = req.body;
     
@@ -34,6 +35,7 @@ router.post("/", verifyToken, async (req, res) => {
 // 2. Get All Upcoming Events
 router.get("/", async (req, res) => {
   try {
+    await connectDB(); 
     const db = getDB();
     const today = new Date();
     const events = await db.collection("events")
@@ -49,6 +51,7 @@ router.get("/", async (req, res) => {
 // 3. Get Recent 6 Events (Home Page)
 router.get("/recent", async (req, res) => {
   try {
+    await connectDB();
     const db = getDB();
     const today = new Date();
     const events = await db.collection("events")
@@ -65,6 +68,7 @@ router.get("/recent", async (req, res) => {
 // 4. Get My Events (For Manage Page)
 router.get("/my-events", verifyToken, async (req, res) => {
   try {
+    await connectDB(); 
     const db = getDB();
     const events = await db.collection("events")
       .find({ userEmail: req.user.email })
@@ -79,6 +83,7 @@ router.get("/my-events", verifyToken, async (req, res) => {
 // 5. Get Single Event
 router.get("/:id", async (req, res) => {
   try {
+    await connectDB(); 
     const db = getDB();
     const { id } = req.params;
     
@@ -97,6 +102,7 @@ router.get("/:id", async (req, res) => {
 // 6. Join Event
 router.post("/:id/join", verifyToken, async (req, res) => {
   try {
+    await connectDB(); 
     const db = getDB();
     const { id } = req.params;
     const userEmail = req.user.email;
@@ -125,6 +131,7 @@ router.post("/:id/join", verifyToken, async (req, res) => {
 // 7. Update Event
 router.put("/:id", verifyToken, async (req, res) => {
   try {
+    await connectDB(); 
     const db = getDB();
     const { id } = req.params;
     const { title, description, eventType, imageUrl, location, eventDate } = req.body;
@@ -159,6 +166,7 @@ router.put("/:id", verifyToken, async (req, res) => {
 // 8. Delete Event
 router.delete("/:id", verifyToken, async (req, res) => {
   try {
+    await connectDB(); 
     const db = getDB();
     const { id } = req.params;
     
