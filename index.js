@@ -1,26 +1,20 @@
-require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
-const { connectDB } = require("./db");
-const eventRoutes = require("./routes/events");
+import "dotenv/config";
+import express from "express";
+import cors from "cors";
+import { connectDB } from "./db.js"; 
+import eventRoutes from "./routes/events.js"; 
 
 const app = express();
 
-app.use(cors({ 
-  origin: process.env.CLIENT_URL, 
-  credentials: true 
-}));
+app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 app.use(express.json());
 
 app.use("/api/events", eventRoutes);
 
-app.get("/", (req, res) => {
-  res.send("Server is running perfectly! 🚀");
-});
+app.get("/", (req, res) => res.send("Server is running perfectly! 🚀"));
 
 
-module.exports = app;
-
+export default app;
 
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 5000;

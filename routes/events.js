@@ -1,7 +1,8 @@
-const express = require("express");
-const { getDB } = require("../db");
-const verifyToken = require("../middleware/verifyToken");
-const { ObjectId } = require("mongodb");
+import express from "express";
+import { getDB } from "../db.js";
+import verifyToken from "../middleware/verifyToken.js";
+import { ObjectId } from "mongodb";
+
 const router = express.Router();
 
 // 1. Create Event
@@ -100,14 +101,6 @@ router.post("/:id/join", verifyToken, async (req, res) => {
     const { id } = req.params;
     const userEmail = req.user.email;
 
-    // ✅ সার্ভার টার্মিনালে দেখার জন্য লগ
-    console.log(`[JOIN ATTEMPT] User: ${userEmail}, Event: ${id}`);
-
-    if (!userEmail) {
-      console.log("[JOIN ERROR] No email found in token");
-      return res.status(401).json({ message: "User email not found in token" });
-    }
-
     if (!ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid Event ID" });
     }
@@ -115,22 +108,16 @@ router.post("/:id/join", verifyToken, async (req, res) => {
     const event = await db.collection("events").findOne({ _id: new ObjectId(id) });
     if (!event) return res.status(404).json({ message: "Event not found" });
     
-    // ✅ চেক করা হচ্ছে অলরেডি জয়েন করা আছে কি না
     if (event.joinedUsers && event.joinedUsers.includes(userEmail)) {
-      console.log("[JOIN ERROR] User already joined");
       return res.status(400).json({ message: "You have already joined this event" });
     }
 
-    // ✅ ইভেন্টে ইউজারকে পুশ করা হচ্ছে
     await db.collection("events").updateOne(
       { _id: new ObjectId(id) },
       { $push: { joinedUsers: userEmail } }
     );
-    
-    console.log("[JOIN SUCCESS] User added to joinedUsers");
     res.status(200).json({ message: "Joined successfully" });
   } catch (error) {
-    console.error("[JOIN EXCEPTION]", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -193,4 +180,4 @@ router.delete("/:id", verifyToken, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
